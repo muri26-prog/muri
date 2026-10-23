@@ -21,11 +21,12 @@ place for your exact dates and fills in a per-day safety level, events, happenin
 
 ## Get the APK
 
-There is no local Android SDK needed. GitHub Actions builds the app on every push:
+Every build publishes the app as a GitHub release. On your phone, open:
 
-1. Open the repo's **Actions** tab, then the latest **Build APK** run.
-2. Download the **TripScout-debug-apk** artifact (a zip containing `app-debug.apk`).
-3. Copy it to your phone and install it (allow "Install unknown apps" for your file manager or browser).
+**https://github.com/muri26-prog/muri/releases/download/latest/TripScout.apk**
+
+The browser downloads `TripScout.apk`. Open it and allow "Install unknown apps" for your browser when asked.
+Release page: https://github.com/muri26-prog/muri/releases/tag/latest
 
 The debug APK is signed with a debug key. That's fine for personal use, but not for the Play Store.
 
