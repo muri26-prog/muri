@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 fun SettingsScreen(vm: TripViewModel) {
     var key by remember { mutableStateOf(vm.apiKey) }
     var model by remember { mutableStateOf(vm.model) }
+    var ticketmaster by remember { mutableStateOf(vm.ticketmasterKey) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -77,7 +78,22 @@ fun SettingsScreen(vm: TripViewModel) {
                     "access to an unlocked or rooted phone could read it, so use a dedicated key with a low limit.",
                 style = MaterialTheme.typography.bodySmall,
             )
-            Button(onClick = { vm.saveSettings(key, model) }, modifier = Modifier.fillMaxWidth()) { Text("Save") }
+            Text("Event listings (optional)", style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 12.dp))
+            Text(
+                "A free Ticketmaster key adds real concerts, sports, theatre and festivals with photos and " +
+                    "ticket links. Get one at developer.ticketmaster.com (\"Consumer Key\"). Best coverage in " +
+                    "Europe and North America.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            OutlinedTextField(
+                value = ticketmaster, onValueChange = { ticketmaster = it },
+                label = { Text("Ticketmaster API key") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(onClick = { vm.saveSettings(key, model, ticketmaster) }, modifier = Modifier.fillMaxWidth()) { Text("Save") }
         }
     }
 }

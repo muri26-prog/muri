@@ -11,6 +11,7 @@ import com.anthropic.models.messages.WebSearchTool20260209
 import com.muri.tripscout.model.AiDay
 import com.muri.tripscout.model.AiLocationResearch
 import com.muri.tripscout.model.Article
+import com.muri.tripscout.model.Event
 import com.muri.tripscout.model.SafetyLevel
 import com.muri.tripscout.model.SourceKind
 import kotlinx.coroutines.Dispatchers
@@ -98,14 +99,24 @@ class ClaudeResearcher(apiKey: String, private val model: String = DEFAULT_MODEL
                   "date": "YYYY-MM-DD",
                   "safety_level": "low | moderate | elevated | high",
                   "safety_notes": "specific risks or 'No specific concerns found'",
-                  "events": ["Event name - time/venue - one line"],
+                  "events": [
+                    {
+                      "title": "Event name",
+                      "time": "19:30 or null",
+                      "venue": "Venue name and address or null",
+                      "category": "Concert / Festival / Sport / Market / Exhibition / ...",
+                      "description": "2-4 sentences: what it is, who it suits, price or tickets if known",
+                      "url": "the event's own page (official site or ticketing page) you actually found, or null"
+                    }
+                  ],
                   "happenings": "strikes, closures, crowds, holidays, anything notable",
                   "tips": "one or two practical tips for that day"
                 }
               ],
               "sources": [{"title": "...", "url": "https://..."}]
             }
-            Include one entry in "days" for every date you were given.
+            Include one entry in "days" for every date you were given. Only give a "url" you saw in
+            search results; never construct one.
         """.trimIndent()
 
         fun userPrompt(place: String, days: List<LocalDate>, today: LocalDate, context: String): String = """
@@ -140,7 +151,7 @@ class ClaudeResearcher(apiKey: String, private val model: String = DEFAULT_MODEL
                         date = date,
                         safetyLevel = SafetyLevel.parse(day.s("safety_level")),
                         safetyNotes = day.s("safety_notes"),
-                        events = (day["events"] as? JsonArray).orEmpty().map { it.text() }.filter { it.isNotBlank() },
+                        events = (day["events"] as? JsonArray).orEmpty().mapNotNull { parseEvent(it, date) },
                         happenings = day.s("happenings"),
                         tips = day.s("tips"),
                     )
@@ -152,6 +163,28 @@ class ClaudeResearcher(apiKey: String, private val model: String = DEFAULT_MODEL
                 },
             )
         }
+
+        /** Accepts the object shape from the prompt, and plain strings in case the model returns those. */
+        private fun parseEvent(element: JsonElement, date: LocalDate): Event? {
+            if (element is JsonPrimitive) {
+                return element.text().takeIf { it.isNotBlank() }
+                    ?.let { Event(it, date, null, null, null, null, null, null, SOURCE) }
+            }
+            val obj = element as? JsonObject ?: return null
+            return Event(
+                title = obj.s("title").ifBlank { return null },
+                date = date,
+                time = obj.s("time").ifBlank { null },
+                venue = obj.s("venue").ifBlank { null },
+                description = obj.s("description").ifBlank { null },
+                url = obj.s("url").takeIf { it.startsWith("https://") || it.startsWith("http://") },
+                imageUrl = null, // filled from the event page itself, see PageImageSource
+                category = obj.s("category").ifBlank { null },
+                source = SOURCE,
+            )
+        }
+
+        private const val SOURCE = "Claude web research"
 
         private fun JsonObject.s(key: String): String = this[key].text()
         private fun JsonElement?.text(): String = (this as? JsonPrimitive)?.content?.takeIf { it != "null" }.orEmpty()

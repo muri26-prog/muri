@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.muri.tripscout.model.Article
 import com.muri.tripscout.model.DayReport
 import com.muri.tripscout.model.DayWeather
+import com.muri.tripscout.model.Event
 import com.muri.tripscout.model.LocationReport
 import com.muri.tripscout.model.SafetyLevel
 import com.muri.tripscout.model.SourceKind
@@ -89,24 +91,26 @@ fun ReportScreen(vm: TripViewModel, trip: Trip) {
                     Text("Research failed: ${state.message}", color = MaterialTheme.colorScheme.error)
                     Button(onClick = { vm.research(trip.id) }, modifier = Modifier.padding(top = 12.dp)) { Text("Try again") }
                 }
-                is ReportState.Ready -> ReportContent(state.report, hasAi = vm.apiKey.isNotBlank())
+                is ReportState.Ready -> ReportContent(state.report, hasAi = vm.apiKey.isNotBlank()) { event ->
+                    vm.open(Screen.EventDetail(event))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ReportContent(report: TripReport, hasAi: Boolean) {
+private fun ReportContent(report: TripReport, hasAi: Boolean, onEvent: (Event) -> Unit) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     TabRow(selectedTabIndex = tab) {
         Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Day by day") })
         Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Places") })
     }
-    if (tab == 0) DailyTab(report, hasAi) else PlacesTab(report)
+    if (tab == 0) DailyTab(report, hasAi, onEvent) else PlacesTab(report, onEvent)
 }
 
 @Composable
-private fun DailyTab(report: TripReport, hasAi: Boolean) {
+private fun DailyTab(report: TripReport, hasAi: Boolean, onEvent: (Event) -> Unit) {
     val byStop = report.locations.associateBy { it.stop.id }
     val calendar = report.trip.calendar().toList()
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -127,7 +131,7 @@ private fun DailyTab(report: TripReport, hasAi: Boolean) {
                 stops.forEach { stop ->
                     val location = byStop[stop.id] ?: return@forEach
                     val day = location.days.firstOrNull { it.date == date } ?: return@forEach
-                    DayCard(location, day)
+                    DayCard(location, day, hasAi, onEvent)
                 }
             }
         }
@@ -135,7 +139,7 @@ private fun DailyTab(report: TripReport, hasAi: Boolean) {
 }
 
 @Composable
-private fun DayCard(location: LocationReport, day: DayReport) {
+private fun DayCard(location: LocationReport, day: DayReport, hasAi: Boolean, onEvent: (Event) -> Unit) {
     Card(Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -157,10 +161,15 @@ private fun DayCard(location: LocationReport, day: DayReport) {
 
             day.ai?.let { ai ->
                 if (ai.safetyNotes.isNotBlank()) { SectionTitle("Safety"); Text(ai.safetyNotes) }
-                if (ai.events.isNotEmpty()) {
-                    SectionTitle("Events")
-                    ai.events.forEach { Text("• $it", modifier = Modifier.padding(vertical = 2.dp)) }
-                }
+            }
+            if (day.events.isNotEmpty()) {
+                SectionTitle("Events (${day.events.size}) · tap for details")
+                day.events.forEach { EventRow(it) { onEvent(it) } }
+            } else if (hasAi && location.ai != null) {
+                SectionTitle("Events")
+                Text("No events found for this day.", style = MaterialTheme.typography.bodySmall)
+            }
+            day.ai?.let { ai ->
                 if (ai.happenings.isNotBlank()) { SectionTitle("What's happening"); Text(ai.happenings) }
                 if (ai.tips.isNotBlank()) { SectionTitle("Tips"); Text(ai.tips) }
             }
@@ -202,19 +211,34 @@ private fun SafetyBadge(level: SafetyLevel) {
 }
 
 @Composable
-private fun PlacesTab(report: TripReport) {
+private fun PlacesTab(report: TripReport, onEvent: (Event) -> Unit) {
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(report.locations, key = { it.stop.id }) { location -> PlaceCard(location) }
+        items(report.locations, key = { it.stop.id }) { location -> PlaceCard(location, onEvent) }
     }
 }
 
 @Composable
-private fun PlaceCard(location: LocationReport) {
+private fun PlaceCard(location: LocationReport, onEvent: (Event) -> Unit) {
     Card(Modifier.fillMaxWidth()) {
+        location.placeInfo?.imageUrl?.let { image ->
+            RemoteImage(image, location.geo?.name ?: location.stop.place, Modifier.fillMaxWidth().height(180.dp))
+        }
         Column(Modifier.padding(16.dp)) {
             Text(location.geo?.label ?: location.stop.place, style = MaterialTheme.typography.titleMedium)
             Text("${formatDate(location.stop.startDate)} – ${formatDate(location.stop.endDate)}",
                 style = MaterialTheme.typography.bodySmall)
+
+            location.placeInfo?.let { info ->
+                SectionTitle("About")
+                ExpandableText(info.summary, collapsedLines = 3)
+                ArticleLink(Article("Wikipedia article and photos", info.pageUrl, null, null, SourceKind.WEB))
+            }
+
+            val stayEvents = location.days.flatMap { it.events }
+            if (stayEvents.isNotEmpty()) {
+                SectionTitle("Events during your stay (${stayEvents.size})")
+                stayEvents.forEach { event -> EventRow(event, showDate = true) { onEvent(event) } }
+            }
 
             location.ai?.let { ai ->
                 if (ai.rawText != null) {

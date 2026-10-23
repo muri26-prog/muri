@@ -24,9 +24,14 @@ class TripStore(context: Context) {
         get() = prefs.getString(KEY_MODEL, null)?.takeIf { it.isNotBlank() } ?: ClaudeResearcher.DEFAULT_MODEL
         set(value) = prefs.edit().putString(KEY_MODEL, value.trim()).apply()
 
+    var ticketmasterKey: String
+        get() = prefs.getString(KEY_TICKETMASTER, "").orEmpty()
+        set(value) = prefs.edit().putString(KEY_TICKETMASTER, value.trim()).apply()
+
     private companion object {
         const val KEY_TRIPS = "trips"
         const val KEY_API_KEY = "anthropic_api_key"
         const val KEY_MODEL = "claude_model"
+        const val KEY_TICKETMASTER = "ticketmaster_api_key"
     }
 }

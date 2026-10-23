@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
+import com.muri.tripscout.ui.EventDetailScreen
 import com.muri.tripscout.ui.ReportScreen
 import com.muri.tripscout.ui.Screen
 import com.muri.tripscout.ui.SettingsScreen
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
                         if (trip != null) ReportScreen(vm, trip) else LaunchedEffect(Unit) { vm.back() }
                     }
                     Screen.Settings -> SettingsScreen(vm)
+                    is Screen.EventDetail -> EventDetailScreen(vm, screen.event)
                 }
             }
         }

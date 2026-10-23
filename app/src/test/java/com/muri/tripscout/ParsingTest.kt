@@ -97,7 +97,7 @@ class ParsingTest {
         val research = ClaudeResearcher.parse(reply)
         assertNull(research.rawText)
         assertEquals(SafetyLevel.ELEVATED, research.days.single().safetyLevel)
-        assertEquals(listOf("Jazz fest"), research.days.single().events)
+        assertEquals(listOf("Jazz fest"), research.days.single().events.map { it.title })
         assertEquals(1, research.sources.size)
     }
 

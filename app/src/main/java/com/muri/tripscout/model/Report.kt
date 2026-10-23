@@ -10,9 +10,32 @@ data class GeoPlace(
     val country: String,
     val region: String?,
     val timezone: String?,
+    val population: Long? = null,
 ) {
-    val label: String get() = listOfNotNull(name, region, country).distinct().joinToString(", ")
+    val label: String get() = listOfNotNull(name, region, country).filter { it.isNotBlank() }.distinct().joinToString(", ")
 }
+
+/** Short description and photo of a place, from Wikipedia. */
+data class PlaceInfo(
+    val summary: String,
+    val imageUrl: String?,
+    val pageUrl: String,
+)
+
+/** One event happening at a location, from Ticketmaster or Claude's web research. */
+data class Event(
+    val title: String,
+    val date: LocalDate?,
+    val time: String?,
+    val venue: String?,
+    val description: String?,
+    val url: String?,
+    val imageUrl: String?,
+    val category: String?,
+    val source: String,
+    /** The place the event is in, used for map and photo links. */
+    val city: String? = null,
+)
 
 enum class WeatherKind { FORECAST, TYPICAL }
 
@@ -61,7 +84,7 @@ data class AiDay(
     val date: LocalDate,
     val safetyLevel: SafetyLevel,
     val safetyNotes: String,
-    val events: List<String>,
+    val events: List<Event>,
     val happenings: String,
     val tips: String,
 )
@@ -80,11 +103,14 @@ data class DayReport(
     val weather: DayWeather?,
     val holidays: List<Holiday>,
     val ai: AiDay?,
+    /** Events on this day from every source, de-duplicated. */
+    val events: List<Event> = emptyList(),
 )
 
 data class LocationReport(
     val stop: Stop,
     val geo: GeoPlace?,
+    val placeInfo: PlaceInfo?,
     val days: List<DayReport>,
     val advisory: Advisory?,
     val staySafe: String?,

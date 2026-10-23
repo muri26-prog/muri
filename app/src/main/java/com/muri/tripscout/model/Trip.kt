@@ -3,12 +3,17 @@ package com.muri.tripscout.model
 import java.time.LocalDate
 import java.util.UUID
 
-/** One place on the itinerary, visited from [startDate] to [endDate] (both inclusive). */
+/**
+ * One place on the itinerary, visited from [startDate] to [endDate] (both inclusive).
+ * [geo] is the exact place the user picked from the suggestions; when set, research uses it
+ * directly instead of guessing from the name.
+ */
 data class Stop(
     val id: String = UUID.randomUUID().toString(),
     val place: String,
     val startDate: LocalDate,
     val endDate: LocalDate,
+    val geo: GeoPlace? = null,
 ) {
     init {
         require(!endDate.isBefore(startDate)) { "endDate must not be before startDate" }

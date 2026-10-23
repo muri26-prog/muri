@@ -7,13 +7,16 @@ Trip Scout builds a briefing covering weather, safety, events and what's going o
 
 | Data | Source | Key needed |
 |---|---|---|
-| Place lookup (coordinates, country) | Open-Meteo Geocoding | No |
+| City suggestions while you type, so the exact place is used | Open-Meteo Geocoding | No |
+| City photo and short introduction | Wikipedia | No |
 | Weather: real forecast up to 16 days ahead, then a typical-weather estimate (3-year average) | Open-Meteo forecast and archive | No |
 | Public holidays (closures, crowds) | Nager.Date | No |
 | Official travel advice and alert level | UK FCDO (GOV.UK content API) | No |
 | Community safety tips ("Stay safe") | Wikivoyage | No |
 | News: latest, safety-related, events on your dates, local-language news | Google News RSS | No |
 | Reddit threads from the last month | Reddit public search | No |
+| Event listings with photos and ticket links | Ticketmaster Discovery API | Free Ticketmaster key |
+| Event pictures for events Claude finds | The event page's own preview image | No |
 | **Daily safety rating, events, local news, Reddit/forums, blogs, official city sources** | **Claude with web search** | **Anthropic API key** |
 
 Without a key, the app works with the free sources only. With a key (Settings), Claude researches each
@@ -41,10 +44,12 @@ You need Android Studio (or the Android SDK with API 36) and JDK 17.
 
 ## Using it
 
-1. Tap **New trip**, name it, and add places with date ranges. Use `City, Country` (e.g. `Kotor, Montenegro`).
+1. Tap **New trip**, name it, and add places with date ranges. Start typing a city and tap the right one
+   in the suggestion list (flag, region, country and population help tell same-named places apart).
 2. Tap **Save and research**.
 3. **Day by day** tab: each date, each place you're at that day (travel days show both).
-4. **Places** tab: overview, official advice, Wikivoyage tips, headlines, Reddit, the sources Claude used,
+4. Tap any event for its detail page: photo, time, venue, description, event/ticket link, map and photo search.
+5. **Places** tab: city photo, overview, official advice, Wikivoyage tips, headlines, Reddit, the sources Claude used,
    and any source that failed (failures are listed, never hidden).
 
 ## Claude settings
